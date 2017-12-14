@@ -1,33 +1,35 @@
 #include "PlantCircuit.h"
 #include "StensTimer.h"
-#include "Definer.cpp"
 
-const int plantCount = 2;
-PlantCircuit* ecoSystem = new PlantCircuit[plantCount];
+StensTimer* stensTimer;
 
-void humidityTimerCallback(Timer* timer) {
-  PlantCircuit circuit = getCircuitByPin(timer->getAction());
-  circuit.checkHumidity();
-}
+/*
+int shiftPin = 8; // SH_CP 74HC595
+int storePin = 9; // ST_CP 74HC595
+int dataPin = 10; // DS 74HC595
+*/
 
 void evolveEcoSystem()
 {
-  ecoSystem[0] = PlantCircuit("Plant Left", PIN07, 2000, humidityTimerCallback);
-  ecoSystem[1] = PlantCircuit("Plant Right", PIN08, 5000, humidityTimerCallback);
+  PlantCircuit* plant1 = new PlantCircuit("Plant Left");
+  plant1->humiditySetup(7, A1, 2000);
+  plant1->irrigationSetup(8, 10000, true);
+  
+  PlantCircuit* plant2 = new PlantCircuit("Plant Right");
+  plant2->humiditySetup(9, A2, 2000);
+  plant2->irrigationSetup(10, 15000, false);
 }
 
-void setup(){
+void setup()
+{
   Serial.begin(9600);
   while (!Serial);
+  
+  stensTimer = StensTimer::getInstance();
   evolveEcoSystem();
 }
 
-void loop(){
-  for (int n = 0; n < plantCount; n++) { ecoSystem[n].update(); }
-  delay(100);
+void loop()
+{
+  stensTimer->run();
 }
-
-PlantCircuit getCircuitByPin(int pin) {
-  for (int n = 0; n < plantCount; n++) { if (ecoSystem[n].getHumidityVccPin() == pin) { return ecoSystem[n]; } }
-}
-
