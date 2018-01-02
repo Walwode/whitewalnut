@@ -7,7 +7,9 @@ PlantCircuit::PlantCircuit() {}
 PlantCircuit::PlantCircuit(String name)
 {
 	plantName = name;
-	Serial.println("Created " + getName());
+	
+	Serial.print("Created ");
+	Serial.println(getName());
 }
 PlantCircuit::~PlantCircuit() {}
 
@@ -45,8 +47,16 @@ void PlantCircuit::humiditySetup(byte vccPin, byte dataPin, long interval)
 
 int PlantCircuit::checkHumidity()
 {
-	humidity = 200;
-	Serial.println("Check Humidity: " + getName() + "... " + String(getHumidity()));
+	digitalWrite(humidityVccPin, HIGH);
+	delay(1000); // TODO
+	humidity = 1023 - analogRead(dataPin);
+	digitalWrite(humidityVccPin, LOW);
+	
+	Serial.print("Check Humidity (");
+	Serial.print(getName());
+	Serial.print(")... ");
+	Serial.println(String(getHumidity()));
+	
 	return getHumidity();
 }
 
@@ -73,17 +83,23 @@ void PlantCircuit::startIrrigation()
 {
   if (!irrigating) {
     irrigating = true;
-    // pinMode HIGH
+	digitalWrite(irrigationVccPin, HIGH);
     StensTimer::getInstance()->setTimer(this, STOP_IRRIGATION_ACTION, irrigationDuration);
-    Serial.println("Start Irrigation: " + getName() + "... " + String(irrigationDuration));
+	
+    Serial.println("Start Irrigation (");
+	Serial.print(getName());
+	Serial.print(")... ");
+	Serial.println(String(irrigationDuration));
   }
 }
 
 void PlantCircuit::stopIrrigation()
 {
-  irrigating = false;
-	// pinMode LOW
-	Serial.println("Stop Irrigation: " + getName());
+	irrigating = false;
+	digitalWrite(irrigationVccPin, LOW);
+	Serial.print("Stop Irrigation ("
+	Serial.print(getName());
+	Serial.println(")...");
 }
 
 bool PlantCircuit::isDry()
