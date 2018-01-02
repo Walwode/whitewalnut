@@ -16,10 +16,16 @@ class PlantCircuit : public IStensTimerListener
 	
 	// irrigation
 	bool irrigation = false;
-  bool irrigating = false;
+	bool irrigating = false;
 	int irrigationVccPin;
 	long irrigationDuration;
+	int irrigationHumidity = 525; // 1 second preenergization
+	int irrigationTimeLock = 6 * 60 * 60 * 1000; // 6 hours
+	long lastIrrigationMillis = 0;
 
+	// internet
+	Esp8266* esp8266;
+	boolean internet = false;
 	
 	public:
 	
@@ -40,12 +46,17 @@ class PlantCircuit : public IStensTimerListener
 		int getHumidity();
 	
 		// irrigation
-		void irrigationSetup(byte vccPin, long duration, bool automatic);
+		void irrigationSetup(byte vccPin, long duration, int humidityLimit, int reIrrigationTimeLock);
 		int autoIrrigation();
 		void checkIrrigation();
 		void startIrrigation();
 		void stopIrrigation();
 		bool isDry();
+		bool isBeyondIrrigationLock();
+		
+		// internet
+		void wifiSetup(Esp8266* newEsp8266);
+		void logToApi();
 };
 
 #endif
