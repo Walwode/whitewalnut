@@ -96,7 +96,6 @@ void PlantCircuit::startIrrigation()
 		Serial.println(")... ");
 	
 		irrigating = true;
-		lastIrrigationMillis = millis();
 		digitalWrite(irrigationVccPin, HIGH);
 		StensTimer::getInstance()->setTimer(this, STOP_IRRIGATION_ACTION, irrigationDuration);
 		
@@ -109,11 +108,13 @@ void PlantCircuit::stopIrrigation()
 {
 	Serial.print("Stop Irrigation ("
 	Serial.print(getName());
-	Serial.println(")...");
+	Serial.print(")... ");
 	
 	irrigating = false;
+	nextIrrigationTime = millis() + irrigationTimeLock;
 	digitalWrite(irrigationVccPin, LOW);
 	
+	Serial.println(String(irrigationTimeLock));
 	if (internet) logToApi("Stop Irrigation", String(irrigationVccPin));
 }
 
@@ -124,8 +125,7 @@ bool PlantCircuit::isDry()
 
 bool PlantCircuit::isBeyondIrrigationLock()
 {
-	if (lastIrrigationMillis == 0) return true;
-	return ((lastIrrigationMillis + irrigationTimeLock) < millis());
+	return (millis() > nextIrrigationTime);
 }
 
 // << irrigation

@@ -21,7 +21,7 @@ class PlantCircuit : public IStensTimerListener
 	long irrigationDuration;
 	int irrigationHumidity = 525; // 1 second preenergization
 	int irrigationTimeLock = 6 * 60 * 60 * 1000; // 6 hours
-	long lastIrrigationMillis = 0;
+	unsigned long nextIrrigationTime = 0;
 
 	// internet
 	Esp8266* esp8266;

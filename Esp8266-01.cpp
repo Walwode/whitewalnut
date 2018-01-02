@@ -1,15 +1,15 @@
 #include "Esp8266.h"
 
-#define ESP_DEBUG_RESPONSE
+#define ESP8266_DEBUG_RESPONSE
 
-#define SERIAL_RX_PIN 3
-#define SERIAL_TX_PIN 2
-#define SERIAL_BAUD 9600
+#define ESP8266_RX_PIN 3
+#define ESP8266_TX_PIN 2
+#define ESP8266_BAUD 9600
 
 Esp8266::Esp8266()
 {
-	espSerial = new SoftwareSerial(SERIAL_RX_PIN, SERIAL_TX_PIN); // TODO
-	espSerial->begin(SERIAL_BAUD);
+	espSerial = new SoftwareSerial(ESP8266_RX_PIN, ESP8266_TX_PIN); // TODO
+	espSerial->begin(ESP8266_BAUD);
 	
 	this->timeout = 5000; // TODO
 	
@@ -45,7 +45,7 @@ String Esp8266::urlEncode(String str)
 // >> private
 bool Esp8266::findReponse(String keyword)
 {
-	#ifdef ESP_DEBUG_RESPONSE
+	#ifdef ESP8266_DEBUG_RESPONSE
 	Serial.print("ESP8266 response keyword: ");
 	Serial.println(keyword);
 	
@@ -54,7 +54,7 @@ bool Esp8266::findReponse(String keyword)
 	
 	bool keywordFound = _findReponse(keyword);
 	
-	#ifdef ESP_DEBUG_RESPONSE
+	#ifdef ESP8266_DEBUG_RESPONSE
 	Serial.println("<< ESP8266 response end");
 	
 	if (keywordFound) Serial.println("ESP8266 response keyword found");
@@ -81,7 +81,7 @@ bool Esp8266::_findReponse(String keyword)
 		{
 			currentSerialChar = espSerial->read();
 			
-			#ifdef ESP_DEBUG_RESPONSE
+			#ifdef ESP8266_DEBUG_RESPONSE
 			Serial.print(currentSerialChar);
 			#endif
 			
