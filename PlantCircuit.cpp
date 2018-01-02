@@ -2,6 +2,7 @@
 
 #define CHECK_HUMIDITY_ACTION 1
 #define STOP_IRRIGATION_ACTION 2
+#define CHECK_LIGHT_SWITCH 3
 
 PlantCircuit::PlantCircuit() {}
 PlantCircuit::PlantCircuit(String name)
@@ -30,6 +31,9 @@ void PlantCircuit::timerCallback(Timer* timer)
 		case STOP_IRRIGATION_ACTION:
 			stopIrrigation();
 			break;
+		case CHECK_LIGHT_SWITCH:
+			checkBrightness();
+			break;
 		default:
 			break;
 	}
@@ -37,19 +41,23 @@ void PlantCircuit::timerCallback(Timer* timer)
 // << general
 
 // >> humidity
-void PlantCircuit::humiditySetup(byte vccPin, byte dataPin, long interval)
+void PlantCircuit::humiditySetup(byte vccPin, byte dataPin, long interval = 60000 * 60, int threshold = 500)
 {
 	humidityVccPin = vccPin;
 	humidityDataPin = dataPin;
+	humidityThreshold = threshold;
+
+	pinMode(vccPin, OUTPUT);
+	digitalWrite(vccPin, LOW);
 
 	StensTimer::getInstance()->setInterval(this, CHECK_HUMIDITY_ACTION, interval);
 }
 
 int PlantCircuit::checkHumidity()
 {
-	Serial.print("Check Humidity (");
+	Serial.print(F("Check Humidity ("));
 	Serial.print(getName());
-	Serial.print(")... ");
+	Serial.print(F(")... "));
 	
 	digitalWrite(humidityVccPin, HIGH);
 	delay(1000); // TODO
@@ -82,18 +90,19 @@ void PlantCircuit::irrigationSetup(byte vccPin, long duration, int humidityLimit
 	}
 }
 
-void PlantCircuit::checkIrrigation()
+bool PlantCircuit::checkIrrigation()
 {
 	if (irrigation && isDry() && isBeyondIrrigationLock()) startIrrigation();
+	return(irrigating);
 }
 
 void PlantCircuit::startIrrigation()
 {
 	if (!irrigating)
 	{
-		Serial.print("Start Irrigation (");
+		Serial.print(F("Start Irrigation ("));
 		Serial.print(getName());
-		Serial.println(")... ");
+		Serial.print(F(")... "));
 	
 		irrigating = true;
 		digitalWrite(irrigationVccPin, HIGH);
@@ -106,9 +115,9 @@ void PlantCircuit::startIrrigation()
 
 void PlantCircuit::stopIrrigation()
 {
-	Serial.print("Stop Irrigation (");
+	Serial.print(F("Stop Irrigation ("));
 	Serial.print(getName());
-	Serial.print(")... ");
+	Serial.print(F(")... "));
 	
 	irrigating = false;
 	nextIrrigationTime = millis() + irrigationTimeLock;
@@ -130,6 +139,52 @@ bool PlantCircuit::isBeyondIrrigationLock()
 
 // << irrigation
 
+// >> lamp
+void PlantCircuit::lightSetup(byte vccPin, byte dataPin, long interval, int threshold = 25)
+{
+	lightVccPin = vccPin;
+	photoDataPin = dataPin;
+	lightThreshold = threshold;
+	
+	pinMode(lightVccPin, OUTPUT);
+	digitalWrite(lightVccPin, LOW);
+	
+	StensTimer::getInstance()->setInterval(this, CHECK_LIGHT_SWITCH, interval);
+}
+
+void PlantCircuit::checkBrightness()
+{
+	Serial.print(F("Check Brightness ("));
+	Serial.print(getName());
+	Serial.print(F(")... "));
+	
+	int brightness = analogRead(photoDataPin);
+	
+	Serial.println(String(brightness));
+ 
+	if (brightness < lightThreshold) switchLightOn();
+	else switchLightOff();
+}
+
+void PlantCircuit::switchLightOn()
+{
+	Serial.print(F("Switch Light On ("));
+	Serial.print(getName());
+	Serial.println(F(")..."));
+	
+	digitalWrite(lightVccPin, HIGH);
+}
+
+void PlantCircuit::switchLightOff()
+{
+	Serial.print(F("Switch Light Off ("));
+	Serial.print(getName());
+	Serial.println(F(")..."));
+	
+	digitalWrite(lightVccPin, LOW);
+}
+// << lamp
+
 // >> internet
 void PlantCircuit::wifiSetup(Esp8266* newEsp8266)
 {
@@ -137,16 +192,16 @@ void PlantCircuit::wifiSetup(Esp8266* newEsp8266)
 	
 	if (esp8266->sendCommand("AT", "OK"))
 	{
-		Serial.print("Connected to ESP8266 (");
+		Serial.print(F("Connected to ESP8266 ("));
 		Serial.print(getName());
-		Serial.println(")...");
+		Serial.println(F(")..."));
 		
 		internet = true;
 	} else
 	{
-		Serial.print("Error with ESP8266 Connection (");
+		Serial.print(F("Error with ESP8266 Connection ("));
 		Serial.print(getName());
-		Serial.println(")...");
+		Serial.println(F(")..."));
 	}
 }
 
@@ -154,29 +209,36 @@ void PlantCircuit::logToApi(String action, String result)
 {
 	// TODO: avoid reset, avoid new AP registration
 	// TODO: pins to start esp8266 for power saving
-	
-	if (!esp8266->sendCommand("AT+RST", "OK")) { Serial.println("ESP8266 Reset Error"); return; }
-	if (!esp8266->sendCommand("AT+CWMODE=1", "OK")) { Serial.println("ESP8266 CWMode Error"); return; }
-	if (!esp8266->sendCommand("AT+CWJAP=\"WLAN-9PGVPK\",\"6763142139087153\"", "IP")) { Serial.println("ESP8266 WiFi Credential Error"); return; }
+
+	if (!esp8266->sendCommand("AT+CWJAP?","+CWJAP"))
+	{
+		if (!esp8266->sendCommand("AT+RST", "OK")) { Serial.println(F("ESP8266 Reset Error")); return; }
+		if (!esp8266->sendCommand("AT+CWMODE=1", "OK")) { Serial.println(F("ESP8266 CWMode Error")); return; }
+		if (!esp8266->sendCommand("AT+CWJAP=\"WLAN-9PGVPK\",\"6763142139087153\"", "IP")) { Serial.println(F("ESP8266 WiFi Credential Error")); return; }
+	}
 	
 	// esp8266->SendCommand("AT+CIPCLOSE");
-	if (!esp8266->sendCommand("AT+CIPSTART=\"TCP\",\"api.walterheger.de\",80", "OK")) { Serial.println("ESP8266 TCP Connection Error"); return; }
+	if (!esp8266->sendCommand("AT+CIPSTART=\"TCP\",\"api.walterheger.de\",80", "OK")) { Serial.println(F("ESP8266 TCP Connection Error")); return; }
 
-	String url;
+	String url = "";
 	url += "/whitewalnut/entry.php?";
 	url += "device=" + esp8266->urlEncode(getName());
 	url += "&action=" + esp8266->urlEncode(action);
 	url += "&result=" + esp8266->urlEncode(result);
 
-	String cmd;
+	String cmd = "";
 	cmd += "PUT " + url + " HTTP/1.1\r\n";
 	cmd += "Host: api.walterheger.de\r\n";
 	cmd += "Connection: close";
 	// cmd += "Connection: keep-alive";
 	
-	if (!esp8266->sendCommand("AT+CIPSEND=" + String(cmd.length() + 4), ">")) { Serial.println("ESP8266 Send State Error"); return; }
-	if (!esp8266->sendCommand(cmd + "\r\n", "successfully")) { Serial.println("ESP8266 Command Error"); return; }
+	if (!esp8266->sendCommand("AT+CIPSEND=" + String(cmd.length() + 4), ">")) { Serial.println(F("ESP8266 Send State Error")); return; }
+	if (!esp8266->sendCommand(cmd + "\r\n", "successfully")) { Serial.println(F("ESP8266 Command Error")); return; }
 
 	// esp8266->sendCommand("AT+CIPCLOSE");
+ 
+	Serial.print(F("Uploaded Humidity to API ("));
+	Serial.print(getName());
+	Serial.println(F(")..."));
 }
 // << internet

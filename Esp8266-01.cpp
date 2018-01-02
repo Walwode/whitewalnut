@@ -1,6 +1,7 @@
 #include "Esp8266-01.h"
 
-#define ESP8266_DEBUG_RESPONSE
+// #define ESP8266_DEBUG_RESPONSE
+// #define ESP8266_DEBUG_COMMAND
 
 #define ESP8266_RX_PIN 3
 #define ESP8266_TX_PIN 2
@@ -13,7 +14,7 @@ Esp8266::Esp8266()
 	
 	timeout = 5000; // TODO
 	
-	Serial.println("Created ESP8266 ESP-01");
+	Serial.println(F("Created ESP8266 ESP-01"));
 }
 
 Esp8266::~Esp8266() {}
@@ -27,9 +28,13 @@ bool Esp8266::sendCommand(String cmd, String response)
 {
 	while (espSerial->available()) { espSerial->read(); }
 
-	Serial.println(">> ESP8266 command start");
+	#ifdef ESP8266_DEBUG_COMMAND
+	Serial.println(F("-------------------------"));
+	Serial.println(F(">> ESP8266 command start"));
 	Serial.println(cmd);
-	Serial.println(">> ESP8266 command end");
+	Serial.println(F("<< ESP8266 command end"));
+	#endif
+	
 	espSerial->println(cmd);
 
 	if (response != "") { return(findResponse(response)); }
@@ -46,19 +51,19 @@ String Esp8266::urlEncode(String str)
 bool Esp8266::findResponse(String keyword)
 {
 	#ifdef ESP8266_DEBUG_RESPONSE
-	Serial.print("ESP8266 response keyword: ");
+	Serial.print(F("ESP8266 response keyword: "));
 	Serial.println(keyword);
 	
-	Serial.println(">> ESP8266 response start");
+	Serial.println(F(">> ESP8266 response start"));
 	#endif
 	
 	bool keywordFound = _findResponse(keyword);
 	
 	#ifdef ESP8266_DEBUG_RESPONSE
-	Serial.println("<< ESP8266 response end");
+	Serial.println(F("<< ESP8266 response end"));
 	
-	if (keywordFound) Serial.println("ESP8266 response keyword found");
-	else Serial.println("ESP8266 response keyword was not found");
+	if (keywordFound) Serial.println(F("ESP8266 response keyword found"));
+	else Serial.println(F("ESP8266 response keyword was not found"));
 	#endif
 	
 	return keywordFound;
@@ -91,11 +96,22 @@ bool Esp8266::_findResponse(String keyword)
 			// if (keywordFound) return true; // will result in quicker response, but serial might be longer
 		} else
 		{
-			if (++noSerialCounter > 25) { return keywordFound; }
-			delay(20);
+			if (++noSerialCounter > 15) { return keywordFound; }
+			delay(200);
 		}
 	}
-	Serial.println("ESP8266 response timeout");
+	Serial.println(F("ESP8266 response timeout"));
 	return keywordFound;
 }
+
+/*
+bool Esp8266::_findResponse(String keyword)
+{
+	char ch[50];
+	keyword.toCharArray(ch, 50); // TODO buffer size
+	if (espSerial->find(ch)) return true;
+	return false;
+}
+*/
+
 // << private
