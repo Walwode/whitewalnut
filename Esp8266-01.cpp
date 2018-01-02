@@ -1,4 +1,4 @@
-#include "Esp8266.h"
+#include "Esp8266-01.h"
 
 #define ESP8266_DEBUG_RESPONSE
 
@@ -11,7 +11,7 @@ Esp8266::Esp8266()
 	espSerial = new SoftwareSerial(ESP8266_RX_PIN, ESP8266_TX_PIN); // TODO
 	espSerial->begin(ESP8266_BAUD);
 	
-	this->timeout = 5000; // TODO
+	timeout = 5000; // TODO
 	
 	Serial.println("Created ESP8266 ESP-01");
 }
@@ -26,13 +26,13 @@ void Esp8266::sendCommand(String cmd)
 bool Esp8266::sendCommand(String cmd, String response)
 {
 	while (espSerial->available()) { espSerial->read(); }
-	
-	Serial.println(">> ESP8266 command start")
+
+	Serial.println(">> ESP8266 command start");
 	Serial.println(cmd);
 	Serial.println(">> ESP8266 command end");
 	espSerial->println(cmd);
-	
-	if (response != "") { return(findReponse(response)) };
+
+	if (response != "") { return(findResponse(response)); }
 	else { return true; }
 }
 
@@ -43,7 +43,7 @@ String Esp8266::urlEncode(String str)
 }
 
 // >> private
-bool Esp8266::findReponse(String keyword)
+bool Esp8266::findResponse(String keyword)
 {
 	#ifdef ESP8266_DEBUG_RESPONSE
 	Serial.print("ESP8266 response keyword: ");
@@ -52,7 +52,7 @@ bool Esp8266::findReponse(String keyword)
 	Serial.println(">> ESP8266 response start");
 	#endif
 	
-	bool keywordFound = _findReponse(keyword);
+	bool keywordFound = _findResponse(keyword);
 	
 	#ifdef ESP8266_DEBUG_RESPONSE
 	Serial.println("<< ESP8266 response end");
@@ -64,7 +64,7 @@ bool Esp8266::findReponse(String keyword)
 	return keywordFound;
 }
 
-bool Esp8266::_findReponse(String keyword)
+bool Esp8266::_findResponse(String keyword)
 {
 	bool keywordFound = false;
 	

@@ -53,7 +53,7 @@ int PlantCircuit::checkHumidity()
 	
 	digitalWrite(humidityVccPin, HIGH);
 	delay(1000); // TODO
-	humidity = 1023 - analogRead(dataPin);
+	humidity = 1023 - analogRead(humidityDataPin);
 	digitalWrite(humidityVccPin, LOW);
 	
 	Serial.println(String(getHumidity()));
@@ -106,7 +106,7 @@ void PlantCircuit::startIrrigation()
 
 void PlantCircuit::stopIrrigation()
 {
-	Serial.print("Stop Irrigation ("
+	Serial.print("Stop Irrigation (");
 	Serial.print(getName());
 	Serial.print(")... ");
 	
@@ -135,7 +135,7 @@ void PlantCircuit::wifiSetup(Esp8266* newEsp8266)
 {
 	esp8266 = newEsp8266;
 	
-	if (esp8266->SendCommand("AT", "OK"))
+	if (esp8266->sendCommand("AT", "OK"))
 	{
 		Serial.print("Connected to ESP8266 (");
 		Serial.print(getName());
@@ -177,6 +177,6 @@ void PlantCircuit::logToApi(String action, String result)
 	if (!esp8266->sendCommand("AT+CIPSEND=" + String(cmd.length() + 4), ">")) { Serial.println("ESP8266 Send State Error"); return; }
 	if (!esp8266->sendCommand(cmd + "\r\n", "successfully")) { Serial.println("ESP8266 Command Error"); return; }
 
-	// esp8266->SendCommand("AT+CIPCLOSE");
+	// esp8266->sendCommand("AT+CIPCLOSE");
 }
 // << internet

@@ -9,7 +9,7 @@ class Esp8266
 	SoftwareSerial* espSerial;
 	int timeout;
 
-	bool findReponse(String keyword);
+	bool findResponse(String keyword);
 	bool _findResponse(String keyword);
 	
 	public:
@@ -21,8 +21,8 @@ class Esp8266
 		~Esp8266();
 
 		// general
-		bool sendCommand(String cmd);
-		bool sendCommand(String cmd, String ack);
+		void sendCommand(String cmd);
+		bool sendCommand(String cmd, String response);
 		
 		String urlEncode(String str);
 };

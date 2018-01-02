@@ -3,6 +3,7 @@
 
 #include "Arduino.h"
 #include "StensTimer.h"
+#include "Esp8266-01.h"
 
 class PlantCircuit : public IStensTimerListener
 {
@@ -56,7 +57,7 @@ class PlantCircuit : public IStensTimerListener
 		
 		// internet
 		void wifiSetup(Esp8266* newEsp8266);
-		void logToApi();
+		void logToApi(String action, String result);
 };
 
 #endif
