@@ -15,7 +15,7 @@ class Esp8266
 	public:
 	
 		// constructor
-		Esp8266();
+		Esp8266(SoftwareSerial* espSerial, int baud, int timeout);
 	
 		// destructor
 		~Esp8266();

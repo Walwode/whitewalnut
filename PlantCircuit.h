@@ -20,9 +20,8 @@ class PlantCircuit : public IStensTimerListener
 	bool irrigating = false;
 	int irrigationVccPin;
 	long irrigationDuration;
-	int irrigationHumidity = 525; // 1 second preenergization
-	int humidityThreshold; // TODO
-	int irrigationTimeLock = 6 * 60 * 60 * 1000; // 6 hours
+	int irrigationHumidity; // 525 for 1 second preenergization
+	long irrigationTimeLock;
 	unsigned long nextIrrigationTime = 0;
 
 	// internet
@@ -48,12 +47,13 @@ class PlantCircuit : public IStensTimerListener
 		void timerCallback(Timer* timer);
 	
 		// humidity
-		void humiditySetup(byte vccPin, byte dataPin, long interval, int threshold);
+		void humiditySetup(byte vccPin, byte dataPin, long interval);
 		int checkHumidity();
 		int getHumidity();
 	
 		// irrigation
-		void irrigationSetup(byte vccPin, long duration, int humidityLimit, int reIrrigationTimeLock);
+		void irrigationSetup(byte vccPin, long duration);
+		void irrigationSetup(byte vccPin, long duration, int humidityThreshold, long reIrrigationTimeLock);
 		int autoIrrigation();
 		bool checkIrrigation();
 		void startIrrigation();
@@ -62,11 +62,12 @@ class PlantCircuit : public IStensTimerListener
 		bool isBeyondIrrigationLock();
 		
 		// internet
-		void wifiSetup(Esp8266* newEsp8266);
+		void wifiSetup(Esp8266* esp8266);
+		bool checkEspConnection();
 		void logToApi(String action, String result);
 	
 		// light
-		void lightSetup(byte vccPin, byte dataPin, long interval, int threshold);
+		void lightSetup(byte vccPin, byte dataPin, long interval, int threshold = 25);
 		void checkBrightness();
 		void switchLightOn();
 		void switchLightOff();

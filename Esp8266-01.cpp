@@ -3,16 +3,12 @@
 // #define ESP8266_DEBUG_RESPONSE
 // #define ESP8266_DEBUG_COMMAND
 
-#define ESP8266_RX_PIN 3
-#define ESP8266_TX_PIN 2
-#define ESP8266_BAUD 9600
 
-Esp8266::Esp8266()
+Esp8266::Esp8266(SoftwareSerial *espSerial, int baud, int timeout)
 {
-	espSerial = new SoftwareSerial(ESP8266_RX_PIN, ESP8266_TX_PIN); // TODO
-	espSerial->begin(ESP8266_BAUD);
-	
-	timeout = 5000; // TODO
+	this->espSerial = espSerial;
+	this->espSerial->begin(baud);
+	this->timeout = timeout;
 	
 	Serial.println(F("Created ESP8266 ESP-01"));
 }
@@ -69,6 +65,7 @@ bool Esp8266::findResponse(String keyword)
 	return keywordFound;
 }
 
+/*
 bool Esp8266::_findResponse(String keyword)
 {
 	bool keywordFound = false;
@@ -103,8 +100,8 @@ bool Esp8266::_findResponse(String keyword)
 	Serial.println(F("ESP8266 response timeout"));
 	return keywordFound;
 }
+*/
 
-/*
 bool Esp8266::_findResponse(String keyword)
 {
 	char ch[50];
@@ -112,6 +109,5 @@ bool Esp8266::_findResponse(String keyword)
 	if (espSerial->find(ch)) return true;
 	return false;
 }
-*/
 
 // << private

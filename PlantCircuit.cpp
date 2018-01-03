@@ -3,6 +3,7 @@
 #define CHECK_HUMIDITY_ACTION 1
 #define STOP_IRRIGATION_ACTION 2
 #define CHECK_LIGHT_SWITCH 3
+#define CHECK_INTERNET_RECONNECT 4
 
 PlantCircuit::PlantCircuit() {}
 PlantCircuit::PlantCircuit(String name)
@@ -22,8 +23,8 @@ String PlantCircuit::getName()
 
 void PlantCircuit::timerCallback(Timer* timer)
 {
-	// Serial.println("TimerCallback " + String(timer->getAction()) + " for " + getName());
-	switch(timer->getAction()) {
+	switch(timer->getAction())
+	{
 		case CHECK_HUMIDITY_ACTION:
 			checkHumidity();
 			checkIrrigation();
@@ -34,6 +35,9 @@ void PlantCircuit::timerCallback(Timer* timer)
 		case CHECK_LIGHT_SWITCH:
 			checkBrightness();
 			break;
+		case CHECK_INTERNET_RECONNECT:
+			checkEspConnection();
+			break;
 		default:
 			break;
 	}
@@ -41,11 +45,10 @@ void PlantCircuit::timerCallback(Timer* timer)
 // << general
 
 // >> humidity
-void PlantCircuit::humiditySetup(byte vccPin, byte dataPin, long interval = 60000 * 60, int threshold = 500)
+void PlantCircuit::humiditySetup(byte vccPin, byte dataPin, long interval)
 {
 	humidityVccPin = vccPin;
 	humidityDataPin = dataPin;
-	humidityThreshold = threshold;
 
 	pinMode(vccPin, OUTPUT);
 	digitalWrite(vccPin, LOW);
@@ -77,15 +80,20 @@ int PlantCircuit::getHumidity()
 // << humidity
 
 // >> irrigation
-void PlantCircuit::irrigationSetup(byte vccPin, long duration, int humidityLimit, int reIrrigationTimeLock)
+void PlantCircuit::irrigationSetup(byte vccPin, long duration)
+{
+	irrigationSetup(vccPin, duration, 0, 0);
+}
+
+void PlantCircuit::irrigationSetup(byte vccPin, long duration, int humidityThreshold, long reIrrigationTimeLock)
 {
 	irrigationVccPin = vccPin;
 	irrigationDuration = duration;
 	
-	if (humidityLimit > 0)
+	if (humidityThreshold > 0)
 	{
 		irrigation = true;
-		irrigationHumidity = humidityLimit;
+		irrigationHumidity = humidityThreshold;
 		irrigationTimeLock = reIrrigationTimeLock;
 	}
 }
@@ -109,7 +117,7 @@ void PlantCircuit::startIrrigation()
 		StensTimer::getInstance()->setTimer(this, STOP_IRRIGATION_ACTION, irrigationDuration);
 		
 		Serial.println(String(irrigationDuration));
-		if (internet) logToApi("Start Irrigation", String(irrigationVccPin) + " - " + String(irrigationDuration));
+		if (internet) logToApi("Start Irrigation", String(irrigationDuration));
 	}
 }
 
@@ -129,7 +137,7 @@ void PlantCircuit::stopIrrigation()
 
 bool PlantCircuit::isDry()
 {
-	return (humidity < irrigationHumidity);
+	return (humidity <= irrigationHumidity);
 }
 
 bool PlantCircuit::isBeyondIrrigationLock()
@@ -140,7 +148,7 @@ bool PlantCircuit::isBeyondIrrigationLock()
 // << irrigation
 
 // >> lamp
-void PlantCircuit::lightSetup(byte vccPin, byte dataPin, long interval, int threshold = 25)
+void PlantCircuit::lightSetup(byte vccPin, byte dataPin, long interval, int threshold)
 {
 	lightVccPin = vccPin;
 	photoDataPin = dataPin;
@@ -186,9 +194,15 @@ void PlantCircuit::switchLightOff()
 // << lamp
 
 // >> internet
-void PlantCircuit::wifiSetup(Esp8266* newEsp8266)
+void PlantCircuit::wifiSetup(Esp8266* instEsp8266)
 {
-	esp8266 = newEsp8266;
+	esp8266 = instEsp8266;
+	checkEspConnection();
+}
+
+bool PlantCircuit::checkEspConnection()
+{
+	if (!esp8266) return;
 	
 	if (esp8266->sendCommand("AT", "OK"))
 	{
@@ -202,7 +216,10 @@ void PlantCircuit::wifiSetup(Esp8266* newEsp8266)
 		Serial.print(F("Error with ESP8266 Connection ("));
 		Serial.print(getName());
 		Serial.println(F(")..."));
+		
+		StensTimer::getInstance()->setTimer(this, CHECK_INTERNET_RECONNECT, 60000);
 	}
+	return internet;
 }
 
 void PlantCircuit::logToApi(String action, String result)
@@ -237,7 +254,9 @@ void PlantCircuit::logToApi(String action, String result)
 
 	// esp8266->sendCommand("AT+CIPCLOSE");
  
-	Serial.print(F("Uploaded Humidity to API ("));
+	Serial.print(F("Uploaded "));
+	Serial.print(action);
+	Serial.print(F(" to API ("));
 	Serial.print(getName());
 	Serial.println(F(")..."));
 }
